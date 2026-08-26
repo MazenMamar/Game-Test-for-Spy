@@ -137,4 +137,6 @@ class YinYangPainter extends CustomPainter {
   bool shouldRepaint(covariant YinYangPainter oldDelegate) {
     return oldDelegate.glowValue != glowValue;
   }
+
+
 }

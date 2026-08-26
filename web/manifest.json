@@ -1,0 +1,9 @@
+{
+  "name": "Flutter Web S Project",
+  "short_name": "S Project",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "description": "A minimal Flutter Web project."
+}

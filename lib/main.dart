@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'code_editor_page.dart'; // استدعاء الملف
+import 'pages_ui.dart'; // استدعاء ملفك الجديد
 
 void main() {
   runApp(const MyApp());
@@ -12,10 +12,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Code Playground',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const CodeEditorPage(), // جعل محرر الأكواد هو الواجهة الأساسية
+      title: 'Code Playground',
+      theme: ThemeData(
+        brightness: Brightness.dark, // مظهر داكن يناسب المبرمجين
+        primarySwatch: Colors.blue,
+      ),
+      home: const PagesUiPage(), // استدعاء الصفحة الأساسية
     );
   }
 }
-

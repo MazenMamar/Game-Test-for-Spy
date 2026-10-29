@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // مهم عشان زر النسخ
 
 class PagesUiPage extends StatefulWidget {
   const PagesUiPage({super.key});
@@ -11,7 +12,6 @@ class PagesUiPage extends StatefulWidget {
 class _PagesUiPageState extends State<PagesUiPage> {
   final TextEditingController _codeController = TextEditingController();
   
-  // false = واجهة المحرر، true = واجهة الأخطاء والتقرير
   bool _isResultView = false;
   Timer? _debounce;
   List<String> errors = [];
@@ -24,7 +24,7 @@ class _PagesUiPageState extends State<PagesUiPage> {
     });
   }
 
-  // فحص مبدئي للأخطاء والمنطق
+  // فحص مبدئي للأخطاء
   void _checkCodeErrors(String code) {
     List<String> newErrors = [];
 
@@ -35,12 +35,24 @@ class _PagesUiPageState extends State<PagesUiPage> {
     }
 
     if (code.isNotEmpty && !code.contains('main') && code.length > 20) {
-      newErrors.add("تنبيه: يبدو أن الكود يخلو من الدالة الأساسية main().");
+      newErrors.add("تنبيه: الكود يخلو من الدالة الأساسية main().");
     }
 
     setState(() {
       errors = newErrors;
     });
+  }
+
+  // دالة نسخ الكود للحافظة
+  void _copyCodeToClipboard() {
+    Clipboard.setData(ClipboardData(text: _codeController.text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("تم نسخ الكود بنجاح! جاهز للتجربة الخارجية."),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -53,7 +65,7 @@ class _PagesUiPageState extends State<PagesUiPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E1E), // لون خلفية احترافي يشبه VS Code
+      backgroundColor: const Color(0xFF1E1E1E), // ثيم VS Code الداكن
       appBar: AppBar(
         backgroundColor: const Color(0xFF2D2D2D),
         elevation: 0,
@@ -65,13 +77,20 @@ class _PagesUiPageState extends State<PagesUiPage> {
             ),
             const SizedBox(width: 10),
             Text(
-              _isResultView ? "تقرير الأخطاء والتحليل" : "محرر الأكواد الذكي",
+              _isResultView ? "تقرير الأخطاء" : "محرر الأكواد الذكي",
               style: const TextStyle(color: Colors.white, fontSize: 18),
             ),
           ],
         ),
         actions: [
-          // زر تبديل الواجهات بتصميم أنيق
+          // زر نسخ الكود
+          if (!_isResultView)
+            IconButton(
+              icon: const Icon(Icons.copy, color: Colors.lightGreenAccent),
+              tooltip: "نسخ الكود",
+              onPressed: _copyCodeToClipboard,
+            ),
+          // زر تبديل الواجهات
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
             child: ElevatedButton.icon(
@@ -99,7 +118,7 @@ class _PagesUiPageState extends State<PagesUiPage> {
     );
   }
 
-  // --- واجهة 1: محرر الأكواد الاحترافي ---
+  // --- واجهة محرر الأكواد بتصميم VS Code ---
   Widget _buildEditorView() {
     return Column(
       children: [
@@ -118,7 +137,7 @@ class _PagesUiPageState extends State<PagesUiPage> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "تم رصد ${errors.length} تنبيه/خطأ. اضغط على زر الأخطاء بالأعلى للمراجعة.",
+                    "تم رصد ${errors.length} تنبيه/خطأ. راجع تبويب الأخطاء.",
                     style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -143,10 +162,10 @@ class _PagesUiPageState extends State<PagesUiPage> {
               style: const TextStyle(
                 fontFamily: 'monospace', 
                 fontSize: 15, 
-                color: Color(0xFFD4D4D4), // لون نص دارت النموذجي
+                color: Color(0xFFD4D4D4), // لون الكود النموذجي
               ),
               decoration: const InputDecoration(
-                hintText: "// اكتب كود Dart هنا...",
+                hintText: "// اكتب كود Dart هنا...\nvoid main() {\n  print('Hello World');\n}",
                 hintStyle: TextStyle(color: Colors.grey),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.all(16),
@@ -158,7 +177,7 @@ class _PagesUiPageState extends State<PagesUiPage> {
     );
   }
 
-  // --- واجهة 2: شاشة عرض الأخطاء والتقارير الاحترافية ---
+  // --- واجهة عرض الأخطاء ---
   Widget _buildResultAndView() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,11 +188,11 @@ class _PagesUiPageState extends State<PagesUiPage> {
         ),
         const SizedBox(height: 16),
         errors.isEmpty
-            ? Expanded(
+            ? const Expanded(
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 64),
                       SizedBox(height: 16),
                       Text(

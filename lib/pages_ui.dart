@@ -17,7 +17,11 @@ class _PagesUiPageState extends State<PagesUiPage> {
   Timer? _debounce;
   List<String> errors = [];
 
-  // الفحص اللحظي للكود
+  // متغيرات خاصة بتحليل السيرفر السحابي
+  String serverAnalysisResult = "اضغط على زر الفحص السحابي لتحليل الكود...";
+  bool _isLoading = false;
+
+  // الفحص اللحظي للكود محلياً (تنبيهات سريعة)
   void _onCodeChanged(String text) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 600), () {
@@ -25,7 +29,7 @@ class _PagesUiPageState extends State<PagesUiPage> {
     });
   }
 
-  // فحص مبدئي للأخطاء
+  // فحص مبدئي للأخطاء محلياً
   void _checkCodeErrors(String code) {
     List<String> newErrors = [];
 
@@ -41,6 +45,22 @@ class _PagesUiPageState extends State<PagesUiPage> {
 
     setState(() {
       errors = newErrors;
+    });
+  }
+
+  // دالة إرسال الكود للسيرفر السحابي واستقبال نتيجة التحليل الحقيقي
+  Future<void> _runServerAnalysis() async {
+    setState(() {
+      _isLoading = true;
+      _isResultView = true; // الانتقال التلقائي لواجهة النتائج عند الفحص
+    });
+
+    // استدعاء السيرفر المستضاف
+    String result = await ApiService.checkCode(_codeController.text);
+
+    setState(() {
+      serverAnalysisResult = result;
+      _isLoading = false;
     });
   }
 
@@ -84,6 +104,13 @@ class _PagesUiPageState extends State<PagesUiPage> {
           ],
         ),
         actions: [
+          // زر الفحص عبر السيرفر السحابي
+          if (!_isResultView)
+            IconButton(
+              icon: const Icon(Icons.cloud_upload, color: Colors.blueAccent),
+              tooltip: "فحص عبر السيرفر السحابي",
+              onPressed: _runServerAnalysis,
+            ),
           // زر نسخ الكود
           if (!_isResultView)
             IconButton(
@@ -138,7 +165,7 @@ class _PagesUiPageState extends State<PagesUiPage> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "تم رصد ${errors.length} تنبيه/خطأ. راجع تبويب الأخطاء.",
+                    "تم رصد ${errors.length} تنبيه/خطأ محلي. راجع تبويب الأخطاء.",
                     style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -178,52 +205,52 @@ class _PagesUiPageState extends State<PagesUiPage> {
     );
   }
 
-  // --- واجهة عرض الأخطاء ---
+  // --- واجهة عرض النتائج القادمة من السيرفر السحابي ---
   Widget _buildResultAndView() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "نتائج التحليل الفوري:",
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.between,
+          children: [
+            const Text(
+              "نتيجة تحليل السيرفر (PythonAnywhere):",
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              onPressed: _isLoading ? null : _runServerAnalysis,
+              icon: const Icon(Icons.cloud_sync, size: 16),
+              label: const Text("إعادة الفحص"),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        errors.isEmpty
+        _isLoading
             ? const Expanded(
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 64),
-                      SizedBox(height: 16),
-                      Text(
-                        "ممتاز! الكود خالي من أخطاء الصياغة الظاهرة.",
-                        style: TextStyle(color: Colors.greenAccent, fontSize: 16),
-                      ),
-                    ],
-                  ),
+                  child: CircularProgressIndicator(color: Colors.lightBlueAccent),
                 ),
               )
             : Expanded(
-                child: ListView.builder(
-                  itemCount: errors.length,
-                  itemBuilder: (context, index) {
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2D2D2D),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D2D2D),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      serverAnalysisResult,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        color: Colors.lightGreenAccent,
+                        fontSize: 14,
                       ),
-                      child: ListTile(
-                        leading: const Icon(Icons.error_outline, color: Colors.redAccent),
-                        title: Text(
-                          errors[index],
-                          style: const TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                      ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
       ],
